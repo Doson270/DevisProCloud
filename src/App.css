@@ -1,0 +1,373 @@
+/* --- VARIABLES DE DESIGN (SaaS Modern) --- */
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --primary-hover: #1d4ed8;
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --success: #10b981;
+  --success-light: #dcfce7;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --radius: 12px;
+}
+
+/* --- RESET & BASE --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* --- AUTHENTIFICATION --- */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: var(--bg-app);
+  padding: 20px;
+}
+
+.auth-card {
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.btn-auth {
+  background: var(--primary);
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-auth:hover { background: var(--primary-hover); }
+
+.btn-switch-auth {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- HEADER & NAVIGATION --- */
+.main-header {
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.brand-section h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.brand-section h1 span {
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.header-actions-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: var(--radius);
+  gap: 4px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tabs button.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.btn-logout {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* --- CARDS & FORMULAIRES --- */
+.card {
+  background: var(--bg-card);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  margin-bottom: 100px; /* Espace pour actions mobile */
+}
+
+.coords-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.coord-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.box-header label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.header-actions select { flex: 1; }
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background: #fff;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.bold { font-weight: 700; font-size: 1.1rem; }
+
+/* --- BOUTONS CRUD CLIENT --- */
+.btn-icon {
+  border: none;
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.btn-icon.add { background: var(--success-light); color: var(--success); }
+.btn-icon.delete { background: var(--danger-light); color: var(--danger); }
+
+.btn-save-client {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg-app);
+  border: 1px dashed var(--primary);
+  color: var(--primary);
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+/* --- TABLEAU ARTICLES --- */
+.items-section { overflow-x: auto; }
+.devis-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  min-width: 500px;
+}
+.devis-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px 8px;
+  border-bottom: 2px solid var(--border-color);
+}
+.devis-table td { padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+
+.btn-delete {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: none;
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-add {
+  background: white;
+  border: 2px dashed var(--border-color);
+  color: var(--primary);
+  padding: 12px;
+  width: 100%;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* --- TOTAUX --- */
+.totals {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.total-row { display: flex; justify-content: space-between; width: 100%; max-width: 300px; }
+.total-row.main {
+  font-size: 1.4rem;
+  color: var(--primary);
+  border-top: 2px solid var(--border-color);
+  padding-top: 15px;
+  margin-top: 5px;
+}
+
+/* --- ACTIONS FLOTTANTES (MOBILE) --- */
+.actions {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 -10px 15px -3px rgba(0,0,0,0.05);
+  z-index: 100;
+}
+.btn-save-cloud { background: var(--primary); color: white; flex: 2; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; }
+.btn-print { background: #f1f5f9; color: var(--text-main); flex: 1; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; }
+
+/* --- TOASTS --- */
+.toast-container {
+  position: fixed;
+  top: 20px; right: 20px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 24px;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+  z-index: 9999;
+  animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border-left: 6px solid var(--primary);
+}
+.toast-container.success { border-left-color: var(--success); }
+.toast-container.error { border-left-color: var(--danger); }
+@keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* --- DESKTOP --- */
+@media (min-width: 768px) {
+  .header-content { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+  .header-actions-main { flex-direction: row; align-items: center; }
+  .tabs { width: fit-content; }
+  .coords-grid { grid-template-columns: 1fr 1fr; }
+  .actions { position: static; box-shadow: none; background: transparent; padding: 30px 0; justify-content: flex-end; }
+  .btn-save-cloud, .btn-print { flex: none; width: 220px; padding: 15px; }
+}
+
+/* --- PRINT --- */
+@media print {
+  .no-print, .actions, .tabs, .btn-add, .btn-delete, .btn-save-client, .btn-logout, .header-actions, .auth-container { display: none !important; }
+  body { background: white; }
+  .container { padding: 0; max-width: 100%; }
+  .card { box-shadow: none; border: none; padding: 0; }
+  input, textarea, select { border: none !important; appearance: none; padding: 0 !important; }
+}
+.password-requirements {
+  text-align: left;
+  font-size: 0.75rem;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.password-requirements p {
+  margin: 2px 0;
+  transition: color 0.3s ease;
+}
+.provider-box {
+  border-left: 4px solid var(--primary);
+  padding-left: 15px;
+}
+
+.client-box {
+  border-left: 4px solid #f59e0b; /* Orange pour le client */
+  padding-left: 15px;
+}
