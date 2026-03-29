@@ -5,8 +5,12 @@ export function TableauArticles({ items, setItems }) {
   const handleItemChange = (id, field, value) => {
     setItems(items.map(item => {
       if (item.id === id) {
-        // Conversion en nombre pour les calculs, texte pour le service
-        const val = (field === 'qte' || field === 'pu') ? parseFloat(value) || 0 : value;
+        // Pour les nombres, on laisse la chaîne vide s'afficher 
+        // sinon on ne peut pas tout effacer pour retaper
+        let val = value;
+        if (field === 'qte' || field === 'pu') {
+          val = value === '' ? '' : parseFloat(value);
+        }
         return { ...item, [field]: val };
       }
       return item;
@@ -18,51 +22,59 @@ export function TableauArticles({ items, setItems }) {
 
   return (
     <div className="items-section">
-      <table className="devis-table">
-        <thead>
-          <tr>
-            <th>Désignation des travaux</th>
-            <th className="w-100">Qté</th>
-            <th className="w-150">PU HT</th>
-            <th className="w-100 text-right">Total HT</th>
-            <th className="w-50 no-print"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <input 
-                  value={item.service} 
-                  onChange={e => handleItemChange(item.id, 'service', e.target.value)} 
-                  placeholder="Ex: Pose de carrelage..."
-                />
-              </td>
-              <td>
-                <input 
-                  type="number" 
-                  value={item.qte} 
-                  onChange={e => handleItemChange(item.id, 'qte', e.target.value)} 
-                />
-              </td>
-              <td>
-                <input 
-                  type="number" 
-                  value={item.pu} 
-                  onChange={e => handleItemChange(item.id, 'pu', e.target.value)} 
-                />
-              </td>
-              <td className="text-right">
-                {(Number(item.qte) * Number(item.pu)).toFixed(2)} €
-              </td>
-              <td className="no-print">
-                <button className="btn-delete" onClick={() => deleteLine(item.id)}>×</button>
-              </td>
+      <div className="devis-table-wrapper"> {/* Wrapper ajouté pour la sécurité mobile */}
+        <table className="devis-table">
+          <thead>
+            <tr>
+              <th>Désignation des travaux</th>
+              <th className="w-100">Qté</th>
+              <th className="w-150">PU HT</th>
+              <th className="w-100 text-right">Total HT</th>
+              <th className="w-50 no-print"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <button className="btn-add no-print" onClick={addLine}>+ Ajouter une prestation</button>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                {/* L'attribut data-label permet au CSS d'afficher le titre sur mobile */}
+                <td data-label="Désignation">
+                  <input 
+                    value={item.service} 
+                    onChange={e => handleItemChange(item.id, 'service', e.target.value)} 
+                    placeholder="Ex: Pose de carrelage..."
+                  />
+                </td>
+                <td data-label="Quantité">
+                  <input 
+                    type="number" 
+                    value={item.qte} 
+                    onChange={e => handleItemChange(item.id, 'qte', e.target.value)} 
+                  />
+                </td>
+                <td data-label="PU HT">
+                  <input 
+                    type="number" 
+                    step="0.01" // Permet les centimes
+                    value={item.pu} 
+                    onChange={e => handleItemChange(item.id, 'pu', e.target.value)} 
+                  />
+                </td>
+                <td data-label="Total HT" className="text-right">
+                  <span className="total-cell-value">
+                    {(Number(item.qte || 0) * Number(item.pu || 0)).toFixed(2)} €
+                  </span>
+                </td>
+                <td className="no-print">
+                  <button className="btn-delete" onClick={() => deleteLine(item.id)} title="Supprimer la ligne">×</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <button className="btn-add no-print" onClick={addLine}>
+        <span>+</span> Ajouter une prestation
+      </button>
     </div>
   );
 }

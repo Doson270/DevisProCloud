@@ -1836,211 +1836,251 @@ body {
 /* ══════════════════════════════════════════════════════════
    RESPONSIVE — MOBILE (≤ 768px)
    ══════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+/* ============================================================
+   📱 RESPONSIVE DESIGN (Mobiles & Tablettes) - MODE CARTES
+   ============================================================ */
 
-  /* ── Layout principal ── */
+@media (max-width: 768px) {
+  /* 1. Layout Global & Sidebar */
   .dashboard-layout {
     flex-direction: column;
   }
-
-  /* ── Sidebar → Tab-bar basse ── */
+  
+  :root {
+    --sidebar-width: 100%;
+  }
+  
   .sidebar {
-    display: flex; /* réaffiche ce que 900px avait caché */
     width: 100%;
     height: auto;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 999;
-    flex-direction: row;
-    padding: 0;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    /* reset du pseudo-element vertical */
-    background: var(--stone-900);
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
   }
-
-  .sidebar::after { display: none; }
-
-  /* Cache les éléments inutiles en tab-bar */
-  .sidebar-brand,
-  .sidebar-footer { display: none; }
-
+  
   .sidebar-nav {
     flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
-    padding: 8px 12px;
-    width: 100%;
-    flex-grow: 1;
-    gap: 0;
+    overflow-x: auto;
+    padding: 10px 14px;
+    gap: 10px;
+    scrollbar-width: none;
   }
-
+  
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+  
   .sidebar-nav button {
-    flex-direction: column;
-    gap: 3px;
-    font-size: 0.62rem;
-    padding: 8px 12px;
-    align-items: center;
-    text-align: center;
+    white-space: nowrap;
     width: auto;
-    border-radius: var(--r-md);
-    letter-spacing: 0;
+  }
+  
+  .sidebar-brand {
+    padding: 16px 20px;
+    justify-content: center;
+  }
+  
+  .sidebar-footer {
+    display: none;
   }
 
-  /* Trait actif en bas sur mobile au lieu de gauche */
-  .sidebar-nav button.active {
-    box-shadow: inset 0 -2px 0 var(--gold);
-    background: rgba(201,168,76,0.1);
-  }
-
-  /* ── Contenu principal ── */
-  .main-content {
-    height: 100vh;
-    padding-bottom: 72px; /* place pour la tab-bar */
-  }
-
-  /* ── Header ── */
+  /* 2. Headers & Main Content */
   .content-header {
-    padding: 14px 16px;
-    padding-top: calc(14px + env(safe-area-inset-top));
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    gap: 16px;
   }
-
-  .header-title h2 { font-size: 1.2rem; }
-  .header-title p  { display: none; } /* date cachée sur petit écran */
-
+  
   .header-actions {
-    gap: 6px;
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .header-actions .btn-primary,
-  .header-actions .btn-secondary {
-    padding: 8px 12px;
-    font-size: 0.75rem;
-    gap: 5px;
+  .scroll-area {
+    padding: 12px;
   }
 
-  /* Bouton déconnexion mobile (visible uniquement ici) */
-  .btn-logout-mobile {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--danger-dim);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: var(--danger);
-    padding: 7px 11px;
-    border-radius: var(--r-md);
-    font-family: 'Sora', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: all var(--t-fast);
-  }
-
-  .btn-logout-mobile:hover {
-    background: rgba(239,68,68,0.14);
-    border-color: rgba(239,68,68,0.35);
-  }
-
-  /* ── Scroll area ── */
-  .scroll-area { padding: 12px; }
-
-  /* ── Papier A4 → fiche mobile ── */
-  .document-paper,
+  /* 3. Document / Papier */
+  .document-paper, 
   .paper-canvas {
-    padding: 20px 16px;
-    margin-bottom: 100px;
-    box-shadow: none;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--r-lg);
+    margin: 0 0 100px 0;
+    padding: 20px 12px;
+    min-height: auto;
+    border-radius: var(--r-md);
+    width: 100% !important;
+    box-shadow: none; /* Plus léger sur mobile */
   }
 
-  /* En-tête document */
-  .devis-header-top,
+  .devis-header-top, 
   .doc-header {
     flex-direction: column;
-    gap: 14px;
-    margin-bottom: 24px;
-    padding-bottom: 20px;
+    gap: 15px;
+    align-items: center;
+    text-align: center;
+    border-bottom: 1px solid var(--ink);
   }
 
-  .doc-type-title,
-  .badge-title { font-size: 1.8rem; }
-
-  /* Coordonnées → colonne unique */
+  /* 4. Grilles (Infos Entreprise / Client) */
+  .sections-coords, 
   .coords-grid,
-  .sections-coords { grid-template-columns: 1fr; gap: 14px; }
+  .coords-wrapper {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px;
+  }
 
-  /* Tableau articles : colonnes compressées */
-  .devis-table thead th.w-150 { display: none; } /* cache PU HT sur mobile */
-  .devis-table tbody td:nth-child(3) { display: none; }
+  .coord-box {
+    padding: 15px !important;
+  }
 
-  /* Footer doc */
-  .devis-footer-grid,
+  /* 5. MODE CARTES (Transformation du Tableau) */
+  .devis-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+  }
+
+  .devis-table thead {
+    display: none !important; /* On cache l'en-tête classique */
+  }
+
+  .devis-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px; /* Espace entre chaque article */
+    padding-top: 10px;
+  }
+
+  .devis-table tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--surface-2);
+    padding: 12px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .devis-table td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+    width: 100% !important;
+    min-height: 45px;
+  }
+
+  /* Ajout des titres automatiques via data-label */
+  .devis-table td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Style des Inputs dans la carte */
+  .devis-table td input {
+    width: 55% !important;
+    background: white !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--r-sm) !important;
+    padding: 8px !important;
+    font-size: 16px !important; /* Empêche le zoom iOS */
+    text-align: right;
+    color: var(--text-main);
+  }
+
+  /* La Désignation prend toute la largeur et n'a pas de label sur le côté */
+  .devis-table td:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 10px !important;
+  }
+  .devis-table td:first-child::before {
+    margin-bottom: 5px;
+  }
+  .devis-table td:first-child input {
+    width: 100% !important;
+    text-align: left;
+    font-weight: 600;
+  }
+
+  /* Bouton Supprimer positionné en haut à droite de la carte */
+  .btn-delete {
+    position: absolute !important;
+    top: -8px;
+    right: -8px;
+    background: var(--danger) !important;
+    color: white !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+  }
+
+  /* 6. Totaux et Signatures */
+  .devis-footer-grid, 
   .financial-footer {
     flex-direction: column;
-    gap: 20px;
+    gap: 25px;
+    margin-top: 30px;
   }
 
-  .totals-card,
-  .totals-zone { width: 100%; }
+  .totals-zone, 
+  .totals-card, 
+  .totals-list {
+    width: 100% !important;
+  }
 
-  .sig-box { width: 100%; }
+  .signature-zone {
+    width: 100%;
+    order: 2;
+    padding: 20px;
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+  }
+  
+  .sig-box {
+    width: 100%;
+    background: white;
+  }
 
-  /* Barre d'actions flottante */
+  /* 7. Barre d'actions flottante */
   .floating-actions {
     left: 0;
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding: 12px;
+    background: white;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+  }
+  
+  .actions-wrapper {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .actions-wrapper button {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 12px 5px;
   }
 
-  .actions-wrapper { justify-content: stretch; }
-  .actions-wrapper .btn-primary,
-  .actions-wrapper .btn-secondary { flex: 1; justify-content: center; }
-
-  /* ── Historique ── */
-  /* Cache colonnes secondaires */
-  .history-table thead th:nth-child(1),
-  .history-table tbody td:nth-child(1) { display: none; } /* Date */
-
-  /* ── Chat IA ── */
+  /* 8. Chat IA & ScrollTop */
   .ia-floating-bubble {
-    bottom: calc(80px + env(safe-area-inset-bottom));
-    right: 14px;
+    bottom: 80px; 
+    right: 15px;
   }
 
-  .chat-container {
-    width: calc(100vw - 28px);
-    max-width: 420px;
-    height: 65vh;
+  .scroll-to-top {
+    bottom: 80px !important;
+    left: 15px !important;
   }
-
-  /* ── Toast ── */
-  .toast-container {
-    bottom: calc(90px + env(safe-area-inset-bottom));
-    right: 14px;
-    left: 14px;
-    max-width: none;
-  }
-
-  /* ── Auth ── */
-  .auth-card {
-    padding: 2rem 1.5rem;
-    margin: 16px;
-    border-radius: var(--r-lg);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════
-   EXPÉRIENCE TACTILE (tous mobiles)
-   ══════════════════════════════════════════════════════════ */
-
-/* Empêche le zoom auto de Safari sur les inputs */
-input, textarea, select {
-  font-size: 16px !important;
 }
 
 /* Meilleure réactivité tactile */
@@ -2159,4 +2199,172 @@ button,
 
   .coords-grid,
   .sections-coords { grid-template-columns: 1fr 1fr; }
+}
+/* ============================================================
+   📱 RESPONSIVE DESIGN (Mobiles & Tablettes)
+   À ajouter à la toute fin de ton fichier CSS
+   ============================================================ */
+
+/* ── TABLETTES (Max 1024px) ──────────────────────────────── */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 220px;
+  }
+  
+  .document-paper, 
+  .paper-canvas {
+    margin: 0 20px 100px;
+    padding: 40px;
+  }
+}
+
+/* ── MOBILES (Max 768px) ─────────────────────────────────── */
+@media (max-width: 768px) {
+  /* 1. Layout Global & Sidebar */
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  
+  :root {
+    --sidebar-width: 100%;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  /* Menu en ligne avec scroll horizontal sur mobile */
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 10px 14px;
+    gap: 10px;
+    /* Cache la scrollbar sur mobile pour un look plus propre */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .sidebar-nav button {
+    white-space: nowrap;
+    width: auto;
+  }
+  
+  .sidebar-brand {
+    padding: 16px 20px;
+    justify-content: center;
+  }
+  
+  .sidebar-footer {
+    display: none; /* On cache les infos user pour gagner de la place en haut */
+  }
+
+  /* 2. Headers */
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .scroll-area {
+    padding: 16px;
+  }
+
+  /* 3. Document / Papier (Réduction des marges) */
+  .document-paper, 
+  .paper-canvas {
+    margin: 0 0 100px 0;
+    padding: 24px 16px;
+    min-height: auto;
+    border-radius: var(--r-md);
+  }
+
+  .devis-header-top, 
+  .doc-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* 4. Grilles (On passe de 2 colonnes à 1 colonne) */
+  .sections-coords, 
+  .coords-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* 5. Tableaux (Scroll horizontal pour éviter de casser le design) */
+  .modern-table, 
+  .devis-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 6. Totaux et Signatures */
+  .devis-footer-grid, 
+  .financial-footer {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .totals-zone, 
+  .totals-card, 
+  .totals-list {
+    width: 100%;
+  }
+
+  .signature-zone {
+    width: 100%;
+    order: 2; /* Met la signature en dessous des totaux sur mobile */
+  }
+  
+  .sig-box {
+    width: 100%;
+  }
+
+  /* 7. Barre d'actions flottante (En bas) */
+  .floating-actions {
+    left: 0;
+    padding: 12px 16px;
+  }
+  
+  .actions-wrapper {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .actions-wrapper button {
+    flex: 1; /* Les boutons prennent toute la largeur dispo */
+    justify-content: center;
+  }
+
+  /* 8. Authentification */
+  .auth-card {
+    padding: 2.5rem 1.5rem;
+    max-width: 90%;
+  }
+
+  /* 9. Bulle Chat IA */
+  .ia-floating-bubble {
+    bottom: 85px; /* Pour ne pas cacher la barre d'actions */
+    right: 16px;
+  }
+
+  .chat-container {
+    width: calc(100vw - 32px);
+    height: 60vh;
+  }
 }
