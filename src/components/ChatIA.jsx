@@ -54,7 +54,6 @@ const ChatIA = () => {
         <div className="chat-container shadow-2xl">
           <div className="chat-header">
             <span>Assistant IA</span>
-            <button onClick={() => setIsOpen(false)}>✕</button>
           </div>
           <div className="chat-messages" ref={scrollRef}>
             {messages.map((m, i) => (
