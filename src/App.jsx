@@ -1,211 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { SectionsCoordonnees } from './components/SectionsCoordonnees';
-import Configuration from './components/Configuration'; // Ton nouveau composant CRUD
-import ChatIA from './components/ChatIA';
+import { saveFullDevis } from './services/api';
 import Auth from './components/Auth';
-import './App.css';
+import './index.css';
+
+// Composants
+import Configuration from './components/Configuration';
+import GestionClients from './components/GestionClients';
+import Historique from './components/Historique';
+import { SectionsCoordonnees } from './components/SectionsCoordonnees';
+import ArticlesTable from './components/ArticlesTable';
+import ChatIA from './components/ChatIA';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('devis'); // Vues : 'devis', 'historique', 'config'
+  const [view, setView] = useState('devis');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // --- 📦 ÉTATS DES DONNÉES ---
+  // ÉTATS DEVIS
   const [provider, setProvider] = useState({ id: null, nom: '', adresse: '', siret: '' });
   const [client, setClient] = useState({ id: null, nom: '', adresse: '' });
   const [items, setItems] = useState([{ id: Date.now(), description: '', quantite: 1, prix: 0 }]);
   const [tvaRate, setTvaRate] = useState(20);
-  const [historiqueDevis, setHistoriqueDevis] = useState([]);
 
-  // --- 🔐 GESTION AUTHENTIFICATION ---
+  const totalHT = items.reduce((acc, item) => acc + (item.quantite * item.prix), 0);
+  const totalTTC = totalHT * (1 + tvaRate / 100);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- 📥 CHARGEMENT DE L'HISTORIQUE ---
-  const fetchHistorique = async () => {
-    if (!session?.user) return;
-    const { data } = await supabase
-      .from('devis')
-      .select('*, clients(nom)')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-    if (data) setHistoriqueDevis(data);
-  };
-
-  useEffect(() => {
-    if (view === 'historique') fetchHistorique();
-  }, [view, session]);
-
-  // --- 🛠️ LOGIQUE ARTICLES ---
-  const addItem = () => setItems([...items, { id: Date.now(), description: '', quantite: 1, prix: 0 }]);
-  const updateItem = (id, field, value) => setItems(items.map(it => it.id === id ? { ...it, [field]: value } : it));
-  const removeItem = (id) => items.length > 1 && setItems(items.filter(it => it.id !== id));
-
-  const totalHT = items.reduce((sum, it) => sum + (it.quantite * it.prix), 0);
-  const totalTVA = totalHT * (tvaRate / 100);
-  const totalTTC = totalHT + totalTVA;
-
-  // --- 💾 SAUVEGARDE DEVIS ---
-  const handleSaveDevis = async () => {
-    if (!provider.id) return alert("Veuillez sélectionner une entreprise dans l'éditeur");
-    if (!client.nom) return alert("Veuillez saisir un nom de client");
-
+  const handleSave = async () => {
     try {
-      const { data: newDevis, error: devisError } = await supabase
-        .from('devis')
-        .insert([{
-          user_id: session.user.id,
-          entreprise_id: provider.id,
-          total_ht: totalHT,
-          total_ttc: totalTTC,
-          tva_taux: tvaRate
-        }])
-        .select().single();
-
-      if (devisError) throw devisError;
-
-      const linesToInsert = items.map(it => ({
-        devis_id: newDevis.id,
-        user_id: session.user.id,
-        service: it.description,
-        qte: it.quantite,
-        pu: it.prix
-      }));
-
-      await supabase.from('devis_items').insert(linesToInsert);
+      await saveFullDevis({ session, provider, client, items, totalHT, totalTTC, tvaRate });
       alert("✅ Devis enregistré !");
       setView('historique');
-    } catch (error) {
-      alert("Erreur: " + error.message);
-    }
+    } catch (err) { alert(err.message); }
   };
 
-  if (loading) return <div className="loader-saas">Chargement sécurisé...</div>;
   if (!session) return <Auth />;
 
   return (
-    <div className="dashboard-layout">
+    <div className="app-container">
+      {/* BOUTON BURGER */}
+      <button className="burger-menu" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+        {isMenuOpen ? '✕' : '☰'}
+      </button>
+
       {/* SIDEBAR */}
-      <aside className="sidebar no-print">
-        <div className="sidebar-brand">
-          <div className="brand-logo">AP</div>
-          <span className="brand-name">Artisan<span>Pro</span></span>
+      <nav className={`sidebar ${isMenuOpen ? 'open' : ''}`}>
+        <h2>🛠️ ArtisanPro</h2>
+        <div className="nav-list">
+          <button onClick={() => { setView('devis'); setIsMenuOpen(false); }} className={`nav-btn ${view === 'devis' ? 'active' : ''}`}>➕ Nouveau Devis</button>
+          <button onClick={() => { setView('historique'); setIsMenuOpen(false); }} className={`nav-btn ${view === 'historique' ? 'active' : ''}`}>📋 Historique</button>
+          <button onClick={() => { setView('clients'); setIsMenuOpen(false); }} className={`nav-btn ${view === 'clients' ? 'active' : ''}`}>👥 Mes Clients</button>
+          <button onClick={() => { setView('config'); setIsMenuOpen(false); }} className={`nav-btn ${view === 'config' ? 'active' : ''}`}>⚙️ Paramètres</button>
+          <button onClick={() => supabase.auth.signOut()} className="nav-btn" style={{ marginTop: 'auto', color: 'var(--danger)' }}>🚪 Déconnexion</button>
         </div>
-        <nav className="sidebar-nav">
-          <button className={view === 'devis' ? 'active' : ''} onClick={() => setView('devis')}>📝 Éditeur de Devis</button>
-          <button className={view === 'historique' ? 'active' : ''} onClick={() => setView('historique')}>📊 Mes Archives</button>
-          <button className={view === 'config' ? 'active' : ''} onClick={() => setView('config')}>⚙️ Configuration</button>
-        </nav>
-        <div className="sidebar-footer">
-           <button onClick={() => supabase.auth.signOut()} className="btn-signout">Déconnexion</button>
-        </div>
-      </aside>
+      </nav>
 
-      {/* CONTENU PRINCIPAL */}
+      {/* CONTENU */}
       <main className="main-content">
-        <header className="content-header no-print">
-          <h2>{view === 'devis' ? 'Nouveau Devis' : view === 'historique' ? 'Archives' : 'Paramètres'}</h2>
-          <div className="header-actions">
-            {view === 'devis' && (
-              <>
-                <button className="btn-secondary" onClick={() => window.print()}>🖨️ PDF</button>
-                <button className="btn-primary" onClick={handleSaveDevis}>💾 Sauvegarder</button>
-              </>
-            )}
-          </div>
-        </header>
+        {view === 'devis' && (
+          <div className="devis-view">
+            <h1>Nouveau Devis</h1>
+            <SectionsCoordonnees entreprise={provider} setEntreprise={setProvider} client={client} setClient={setClient} session={session} />
+            
+            <div className="section-card">
+              <ArticlesTable items={items} setItems={setItems} />
+            </div>
 
-        <div className="scroll-area">
-          {/* VUE 1 : L'ÉDITEUR */}
-          {view === 'devis' && (
-            <div className="paper-canvas shadow-xl">
-              <div className="devis-inner">
-                <div className="devis-header-top">
-                  <div className="devis-logo-zone"><div className="logo-placeholder-premium">VOTRE LOGO</div></div>
-                  <div className="devis-meta-zone text-right">
-                    <h1 className="doc-type-title">DEVIS</h1>
-                    <p className="doc-meta-text">N° : {new Date().getFullYear()}-001</p>
-                  </div>
-                </div>
-
-                <SectionsCoordonnees 
-                  entreprise={provider} 
-                  setEntreprise={setProvider} 
-                  client={client} 
-                  setClient={setClient}
-                  session={session}
-                />
-
-                <table className="modern-table devis-table">
-                  <thead>
-                    <tr><th>DÉSIGNATION</th><th className="text-center">QTÉ</th><th className="text-right">PRIX UNIT. HT</th><th className="text-right">TOTAL HT</th><th className="no-print"></th></tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item) => (
-                      <tr key={item.id}>
-                        <td><input className="input-clean" value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} placeholder="Prestation..." /></td>
-                        <td className="text-center"><input type="number" className="input-clean text-center" value={item.quantite} onChange={(e) => updateItem(item.id, 'quantite', parseFloat(e.target.value) || 0)} /></td>
-                        <td className="text-right"><input type="number" className="input-clean text-right" value={item.prix} onChange={(e) => updateItem(item.id, 'prix', parseFloat(e.target.value) || 0)} /></td>
-                        <td className="text-right bold-text">{(item.quantite * item.prix).toFixed(2)} €</td>
-                        <td className="no-print text-center"><button onClick={() => removeItem(item.id)} className="btn-del">✕</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <button onClick={addItem} className="btn-add-line no-print">+ Ajouter une ligne</button>
-
-                <div className="devis-footer-grid">
-                  <div className="signature-zone"><p className="sig-title">Bon pour accord</p><div className="sig-box"></div></div>
-                  <div className="totals-zone">
-                    <div className="t-row"><span>Total HT</span> <span>{totalHT.toFixed(2)} €</span></div>
-                    <div className="t-row">
-                      <span>TVA ({tvaRate}%)</span>
-                      <select className="no-print mini-select" value={tvaRate} onChange={(e) => setTvaRate(parseInt(e.target.value))}>
-                        <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option>
-                      </select>
-                      <span>{totalTVA.toFixed(2)} €</span>
-                    </div>
-                    <div className="t-row ttc-row"><span>TOTAL TTC</span> <span>{totalTTC.toFixed(2)} €</span></div>
-                  </div>
+            <div className="section-card" style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', alignItems: 'center' }}>
+                <select value={tvaRate} onChange={(e) => setTvaRate(parseFloat(e.target.value))} style={{ width: 'auto' }}>
+                  <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option>
+                </select>
+                <div>
+                  <p>Total HT : {totalHT.toFixed(2)} €</p>
+                  <h2 style={{ color: 'var(--accent)' }}>Total TTC : {totalTTC.toFixed(2)} €</h2>
                 </div>
               </div>
+              <button onClick={handleSave} className="btn-save">💾 Enregistrer le devis</button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* VUE 2 : L'HISTORIQUE */}
-          {view === 'historique' && (
-            <div className="dashboard-view">
-              <table className="history-table">
-                <thead><tr><th>Date</th><th>Montant TTC</th></tr></thead>
-                <tbody>
-                  {historiqueDevis.map((d) => (
-                    <tr key={d.id}>
-                      <td>{new Date(d.created_at).toLocaleDateString()}</td>
-                      <td className="text-right">{d.total_ttc?.toFixed(2)} €</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {view === 'historique' && <Historique session={session} />}
+        {view === 'clients' && <GestionClients session={session} />}
+        {view === 'config' && <Configuration session={session} />}
 
-          {/* VUE 3 : LA CONFIGURATION (TON CRUD) */}
-          {view === 'config' && <Configuration session={session} />}
-        </div>
+        <ChatIA />
       </main>
-
-      <div className="ia-floating-bubble no-print"><ChatIA /></div>
     </div>
   );
 }
 
-export default App; // L'export par défaut est bien présent ici !
+export default App;

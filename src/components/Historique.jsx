@@ -1,128 +1,104 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { fetchHistoriqueDevis, fetchDevisDetails } from '../services/api';
+import DocumentDevis from './DocumentDevis';
 
-export function Historique({ onSelectDevis, notify }) {
+export default function Historique({ session }) {
   const [devisList, setDevisList] = useState([]);
+  const [selectedDevis, setSelectedDevis] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Charger les données au montage du composant
+  // 1. Charger la liste des devis au montage
   useEffect(() => {
-    fetchHistory();
-  }, []);
-
-  const fetchHistory = async () => {
-    setLoading(true);
-    try {
-      // Requête avec jointures pour récupérer le client et les articles associés
-      const { data, error } = await supabase
-        .from('devis')
-        .select(`
-          *,
-          clients ( nom, adresse, email ),
-          entreprises ( nom, adresse, siret, email ),
-          devis_items ( service, qte, pu )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDevisList(data || []);
-    } catch (error) {
-      console.error("Erreur historique:", error.message);
-      if (notify) notify("Impossible de charger l'historique", "error");
-    } finally {
-      setLoading(false);
+    if (session?.user?.id) {
+      fetchHistoriqueDevis(session.user.id)
+        .then(setDevisList)
+        .catch(err => console.error("Erreur historique:", err))
+        .finally(() => setLoading(false));
     }
-  };
+  }, [session]);
 
-  const deleteDevis = async (id, e) => {
-    // Empêche le clic sur la ligne (qui chargerait le devis)
-    e.stopPropagation(); 
-    
-    if (!window.confirm("Supprimer définitivement ce devis et ses articles ?")) return;
-
+  // 2. Préparer et lancer l'impression
+  const handlePreparePrint = async (id) => {
     try {
-      // 1. Supprimer les articles liés (important pour la base de données)
-      const { error: itemsError } = await supabase
-        .from('devis_items')
-        .delete()
-        .eq('devis_id', id);
-
-      if (itemsError) throw itemsError;
-
-      // 2. Supprimer le devis lui-même
-      const { error: devisError } = await supabase
-        .from('devis')
-        .delete()
-        .eq('id', id);
-
-      if (devisError) throw devisError;
-
-      // 3. Succès : Notification et rafraîchissement
-      if (notify) notify("🗑️ Devis supprimé avec succès");
-      fetchHistory();
+      const data = await fetchDevisDetails(id);
+      if (!data) return alert("Impossible de récupérer les détails du devis.");
       
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error.message);
-      if (notify) notify("❌ Erreur lors de la suppression", "error");
+      setSelectedDevis(data);
+
+      // On laisse un court instant à React pour afficher le devis seul à l'écran
+      setTimeout(() => {
+        window.print();
+      }, 800);
+    } catch (err) {
+      console.error("Erreur lors de la préparation:", err);
+      alert("Erreur technique lors de l'impression.");
     }
   };
 
-  if (loading) return <div className="loading-state">Chargement de vos archives...</div>;
+  if (loading) return <div>Chargement de l'historique...</div>;
 
-  return (
-    <div className="history-container">
-      <div className="history-header">
-        <h2>📂 Historique des Devis</h2>
-        <button className="btn-refresh no-print" onClick={fetchHistory}>
-          🔄 Actualiser
-        </button>
+  // --- VUE D'IMPRESSION (S'affiche uniquement quand un devis est sélectionné) ---
+  if (selectedDevis) {
+    return (
+      <div className="print-mode-container">
+        {/* Bouton visible uniquement à l'écran pour revenir en arrière */}
+        <div className="no-print"
+        >
+          <button 
+            onClick={() => setSelectedDevis(null)}>
+            ⬅️ Quitter l'aperçu / Retour
+          </button>
+          <span>
+            (Si la fenêtre d'impression ne s'est pas ouverte, utilisez Ctrl + P)
+          </span>
+        </div>
+
+        {/* ZONE D'IMPRESSION CIBLÉE PAR LE CSS */}
+        <div id="print-area">
+          <DocumentDevis devis={selectedDevis} />
+        </div>
       </div>
+    );
+  }
 
-      <div className="history-table-wrapper">
-        <table className="history-table">
+  // --- VUE TABLEAU (Interface normale) ---
+  return (
+    <div className="historique-container">
+      <h2>📋 Historique des Devis</h2>
+      
+      {devisList.length === 0 ? (
+        <div>
+          <p>Vous n'avez pas encore créé de devis.</p>
+        </div>
+      ) : (
+        <table>
           <thead>
             <tr>
               <th>Date</th>
-              <th>N° Devis</th>
+              <th>Entreprise</th>
               <th>Client</th>
-              <th className="text-right">Total TTC</th>
-              <th className="no-print">Actions</th>
+              <th>Montant TTC</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {devisList.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="empty-msg">Aucun devis enregistré pour le moment.</td>
+            {devisList.map((d) => (
+              <tr key={d.id}>
+                <td>{new Date(d.created_at).toLocaleDateString()}</td>
+                <td>{d.entreprises?.nom || 'N/A'}</td>
+                <td>{d.clients?.nom || 'N/A'}</td>
+                <td><strong>{d.total_ttc?.toFixed(2)} €</strong></td>
+                <td>
+                  <button 
+                    onClick={() => handlePreparePrint(d.id)}>
+                    🖨️ Imprimer / PDF
+                  </button>
+                </td>
               </tr>
-            ) : (
-              devisList.map((d) => (
-                <tr 
-                  key={d.id} 
-                  onClick={() => onSelectDevis(d)} 
-                  className="history-row"
-                >
-                  <td>{new Date(d.created_at).toLocaleDateString()}</td>
-                  <td><strong>{d.numero}</strong></td>
-                  <td>{d.clients?.nom || 'Client inconnu'}</td>
-                  <td className="text-right bold">{d.total_ttc?.toFixed(2)} €</td>
-                  <td className="no-print">
-                    <div className="action-btns">
-                      <button className="btn-icon-view" title="Ouvrir">👁️</button>
-                      <button 
-                        className="btn-icon-delete" 
-                        title="Supprimer" 
-                        onClick={(e) => deleteDevis(d.id, e)}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
   );
 }

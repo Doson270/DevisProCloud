@@ -9,8 +9,15 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
 
 const handleAuth = async (e) => {
-e.preventDefault();
+  e.preventDefault();
   setLoading(true);
+
+  // --- NOUVELLE SÉCURITÉ : Vérification du mot de passe ---
+  if (!isLogin && password !== confirmPassword) {
+    alert("Les mots de passe ne correspondent pas !");
+    setLoading(false);
+    return;
+  }
 
   try {
     if (isLogin) {
@@ -18,23 +25,29 @@ e.preventDefault();
       if (error) throw error;
       console.log("Connecté !", data);
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        // Optionnel : On peut ajouter le nom ici si on veut
+        options: {
+          data: {
+            display_name: email.split('@')[0], 
+          }
+        }
+      });
       if (error) throw error;
       
-      // Si l'inscription réussit, Supabase renvoie l'utilisateur
       if (data.user) {
-        alert("Inscription réussie ! Vous devriez maintenant le voir dans Supabase.");
-        console.log("Utilisateur créé :", data.user);
+        alert("Inscription réussie ! Vérifiez vos emails si la confirmation est activée.");
       }
     }
   } catch (error) {
-    // TRÈS IMPORTANT : On affiche l'erreur exacte
     console.error("Détails de l'erreur :", error);
-    alert(`Erreur : ${error.message} (Code: ${error.status})`);
+    alert(`Erreur : ${error.message}`);
   } finally {
     setLoading(false);
   }
-  };
+};
 
   
 
