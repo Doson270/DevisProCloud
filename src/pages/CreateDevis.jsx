@@ -13,71 +13,102 @@ export default function CreateDevis({ tools }) {
   } = tools;
 
   return (
-    <div className="page-create">
-      <div className="card">
-        {/* EN-TÊTE POUR L'IMPRESSION PDF */}
-        <div className="print-only-title">
-          <div className="header-left">
-            <h1 className="company-name">{provider.nom || 'VOTRE ENTREPRISE'}</h1>
-            <p className="company-address">{provider.adresse}</p>
-            <p className="company-siret">SIRET : {provider.siret}</p>
+    <div className="page-create-container">
+      {/* HEADER DE LA PAGE (Visible sur écran uniquement) */}
+      <div className="page-header no-print">
+        <div className="header-content">
+          <h1>Nouveau Devis</h1>
+          <p>Créez et personnalisez votre document professionnel</p>
+        </div>
+      </div>
+
+      {/* ZONE DU DOCUMENT (Simule une feuille A4) */}
+      <div className="document-paper shadow-2xl">
+        
+        {/* EN-TÊTE PROFESSIONNEL */}
+        <div className="doc-header">
+          <div className="company-brand">
+            <h2 className="company-name-display">{provider.nom || 'NOM DE VOTRE ENTREPRISE'}</h2>
+            <div className="company-details-grid">
+              <span>{provider.adresse}</span>
+              <span>SIRET : {provider.siret}</span>
+            </div>
           </div>
-          <div className="header-right">
-            <h2>DEVIS</h2>
-            <p>Date : {new Date().toLocaleDateString()}</p>
+          
+          <div className="doc-type-badge">
+            <span className="badge-title">DEVIS</span>
+            <span className="badge-date">Date : {new Date().toLocaleDateString()}</span>
           </div>
         </div>
 
-        {/* COMPOSANT COORDONNÉES */}
-        <SectionsCoordonnees 
-          provider={provider} setProvider={setProvider} savedProviders={savedProviders}
-          client={client} setClient={setClient} savedClients={savedClients}
-        />
-        
-        <hr className="separator" />
-        
-        {/* COMPOSANT TABLEAU ARTICLES */}
-        <TableauArticles items={items} setItems={setItems} />
+        <div className="doc-divider"></div>
 
-        {/* SECTION TOTAUX ET TVA */}
-        <div className="totals">
-          <div className="total-row no-print">
-            <span>Taux de TVA :</span>
-            <select 
-              value={tvaTaux} 
-              onChange={(e) => setTvaTaux(parseFloat(e.target.value))}
-              className="tva-select"
-            >
-              <option value="20">20% (Standard)</option>
-              <option value="10">10% (Rénovation)</option>
-              <option value="5.5">5.5% (Énergie)</option>
-              <option value="0">0% (Auto-Entrepreneur)</option>
-            </select>
+        {/* SECTION COORDONNÉES (Layout amélioré via CSS) */}
+        <div className="sections-container">
+          <SectionsCoordonnees 
+            provider={provider} setProvider={setProvider} savedProviders={savedProviders}
+            client={client} setClient={setClient} savedClients={savedClients}
+          />
+        </div>
+        
+        <div className="doc-divider"></div>
+        
+        {/* TABLEAU DES ARTICLES */}
+        <div className="table-wrapper">
+          <TableauArticles items={items} setItems={setItems} />
+        </div>
+
+        {/* SECTION FINANCIÈRE */}
+        <div className="financial-footer">
+          <div className="notes-section">
+            <p className="legal-mention">
+              {tvaTaux === 0 ? "TVA non applicable, art. 293 B du CGI" : "Prix exprimés en Euros (€)"}
+            </p>
           </div>
 
-          <div className="total-row">
-            <span>Total HT :</span>
-            <strong>{totalHT.toFixed(2)} €</strong>
-          </div>
-          <div className="total-row">
-            <span>TVA ({tvaTaux === 0 ? "Exonération Art. 293B" : `${tvaTaux}%`}) :</span>
-            <strong>{montantTVA.toFixed(2)} €</strong>
-          </div>
-          <div className="total-row main">
-            <span>TOTAL TTC :</span>
-            <strong>{totalTTC.toFixed(2)} €</strong>
+          <div className="totals-card">
+            <div className="total-row no-print tva-picker">
+              <label>Taux de TVA :</label>
+              <select 
+                value={tvaTaux} 
+                onChange={(e) => setTvaTaux(parseFloat(e.target.value))}
+                className="modern-select"
+              >
+                <option value="20">20% (Standard)</option>
+                <option value="10">10% (Rénovation)</option>
+                <option value="5.5">5.5% (Énergie)</option>
+                <option value="0">0% (Auto-Entrepreneur)</option>
+              </select>
+            </div>
+
+            <div className="totals-list">
+              <div className="row">
+                <span>Total HT</span>
+                <span>{totalHT.toFixed(2)} €</span>
+              </div>
+              <div className="row">
+                <span>TVA ({tvaTaux}%)</span>
+                <span>{montantTVA.toFixed(2)} €</span>
+              </div>
+              <div className="row grand-total">
+                <span>TOTAL TTC</span>
+                <span>{totalTTC.toFixed(2)} €</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* BOUTONS D'ACTIONS FIXES EN BAS */}
-      <div className="actions no-print">
-        <button className="btn-save-cloud" onClick={handleSaveFullDevis}>
-          ☁️ Enregistrer sur le Cloud
-        </button>
-        <button className="btn-print" onClick={() => window.print()}>
-          🖨️ Imprimer / PDF
-        </button>
+      {/* BARRE D'ACTIONS FLOTTANTE (Bas de page) */}
+      <div className="floating-actions no-print">
+        <div className="actions-wrapper">
+          <button className="btn-secondary" onClick={() => window.print()}>
+            <span className="icon">🖨️</span> Aperçu PDF
+          </button>
+          <button className="btn-primary" onClick={handleSaveFullDevis}>
+            <span className="icon">☁️</span> Enregistrer le devis
+          </button>
+        </div>
       </div>
     </div>
   );

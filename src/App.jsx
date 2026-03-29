@@ -1,127 +1,254 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { useDevis } from './hooks/useDevis';
-import { useNotify } from './hooks/useNotify';
-import { Toast } from './components/Toast';
-import CreateDevis from './pages/CreateDevis';
-import HistoryPage from './pages/HistoryPage';
+import { SectionsCoordonnees } from './components/SectionsCoordonnees';
+import ChatIA from './components/ChatIA';
 import Auth from './components/Auth';
 import './App.css';
 
 function App() {
-  // --- ÉTATS D'AUTHENTIFICATION ---
   const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState('devis');
 
-  // --- ÉTATS DE NAVIGATION ---
-  const [view, setView] = useState('create'); // 'create' ou 'history'
-  
-  // --- HOOKS PERSONNALISÉS ---
-  const devisTools = useDevis();
-  const { notification, notify } = useNotify();
+  // --- 📦 ÉTATS DES DONNÉES (MODÈLE) ---
+  const [provider, setProvider] = useState({ id: null, nom: '', adresse: '', siret: '' });
+  const [client, setClient] = useState({ id: null, nom: '', adresse: '' });
+  const [items, setItems] = useState([{ id: Date.now(), description: '', quantite: 1, prix: 0 }]);
+  const [tvaRate, setTvaRate] = useState(20);
 
-  // --- GESTION DE LA SESSION SUPABASE ---
+  // --- 📁 ÉTATS DES LISTES (SÉCURISÉES PAR USER_ID) ---
+  const [savedProviders, setSavedProviders] = useState([]);
+  const [savedClients, setSavedClients] = useState([]);
+  const [historiqueDevis, setHistoriqueDevis] = useState([]);
+
+  // --- 🔐 GESTION AUTHENTIFICATION ---
   useEffect(() => {
-    // 1. Vérifie s'il y a déjà une session active au lancement
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setLoading(false);
     });
-
-    // 2. Écoute les changements (quand l'utilisateur se connecte ou se déconnecte)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
-    // Nettoyage de l'écouteur
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- ACTIONS ---
+  // --- 📥 CHARGEMENT DES DONNÉES SÉCURISÉ (BACKEND-STYLE) ---
+  const fetchData = async () => {
+    if (!session || !session.user) return;
 
-  const handleSelectDevis = (data) => {
-    devisTools.loadFullDevis(data);
-    setView('create');
-    notify("Devis chargé avec succès !");
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 1. Récupérer les Entreprises de l'utilisateur connecté uniquement
+    const { data: entData, error: entErr } = await supabase
+      .from('entreprises')
+      .select('*')
+      .eq('user_id', session.user.id) // <--- SÉCURITÉ USER
+      .order('nom');
+    
+    if (!entErr) setSavedProviders(entData || []);
+
+    // 2. Récupérer les Clients filtrés par l'entreprise choisie ET l'user
+    if (provider && provider.id) {
+      const { data: cliData, error: cliErr } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('entreprise_id', provider.id) // <--- FILTRE ENTREPRISE
+        .eq('user_id', session.user.id)   // <--- DOUBLE SÉCURITÉ USER
+        .order('nom');
+      
+      if (!cliErr) setSavedClients(cliData || []);
+    } else {
+      setSavedClients([]); // On vide si aucune entreprise n'est sélectionnée
+    }
+
+    // 3. Récupérer l'Historique de l'utilisateur
+    const { data: histData } = await supabase
+      .from('devis')
+      .select('*, clients(nom)')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+    
+    if (histData) setHistoriqueDevis(histData);
   };
 
-  const onSave = async () => {
-    const success = await devisTools.handleSaveFullDevis();
-    if (success) {
-      notify("✅ Devis enregistré sur le cloud");
-      setView('history');
+  // Déclencheur de mise à jour des données
+  useEffect(() => {
+    fetchData();
+  }, [session, view, provider.id]); // Re-filtre les clients dès que l'entreprise change
+
+  // --- 🛠️ LOGIQUE CRUD ARTICLES ---
+  const addItem = () => setItems([...items, { id: Date.now(), description: '', quantite: 1, prix: 0 }]);
+  const updateItem = (id, field, value) => setItems(items.map(it => it.id === id ? { ...it, [field]: value } : it));
+  const removeItem = (id) => items.length > 1 && setItems(items.filter(it => it.id !== id));
+
+  // --- 🧮 CALCULS ---
+  const totalHT = items.reduce((sum, it) => sum + (it.quantite * it.prix), 0);
+  const totalTVA = totalHT * (tvaRate / 100);
+  const totalTTC = totalHT + totalTVA;
+
+  // --- 💾 SAUVEGARDE ENTREPRISE ---
+  const handleSaveEntreprise = async () => {
+    if (!provider.nom) return alert("Veuillez saisir un nom d'entreprise");
+    
+    const { error } = await supabase.from('entreprises').upsert([{ 
+      id: provider.id || undefined, 
+      nom: provider.nom, 
+      adresse: provider.adresse, 
+      siret: provider.siret,
+      user_id: session.user.id // Liaison forcée à l'utilisateur
+    }]);
+
+    if (error) {
+      alert("Erreur: " + error.message);
     } else {
-      notify("❌ Erreur lors de l'enregistrement", "error");
+      alert("✅ Configuration entreprise enregistrée !");
+      fetchData();
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    // Pas besoin de notify ici car on va être redirigé vers l'écran de connexion
-  };
+  if (loading) return <div className="loader-saas">Chargement de votre espace sécurisé...</div>;
+  if (!session) return <Auth />;
 
-  // --- RENDU CONDITIONNEL : SI NON CONNECTÉ ---
-  if (!session) {
-    return <Auth />; // On affiche uniquement la page de connexion
-  }
-
-  // --- RENDU PRINCIPAL : SI CONNECTÉ ---
   return (
-    <div className="container">
-      {/* NOTIFICATIONS (TOASTS) */}
-      <Toast message={notification?.message} type={notification?.type} />
-
-      {/* HEADER AVEC NAVIGATION MODERNE */}
-      <header className="main-header no-print">
-        <div className="header-content">
-          <div className="brand-section">
-            <h1>🛠️ Devis Pro <span>Cloud</span></h1>
-            {/* Petit badge pour montrer qui est connecté */}
-            <span className="user-email small">Connecté : {session.user.email}</span>
-          </div>
-          
-          <div className="header-actions-main">
-            <nav className="tabs">
-              <button 
-                className={view === 'create' ? 'active' : ''} 
-                onClick={() => setView('create')}
-              >
-                ✍️ Nouveau / Édition
-              </button>
-              <button 
-                className={view === 'history' ? 'active' : ''} 
-                onClick={() => setView('history')}
-              >
-                📂 Historique
-              </button>
-            </nav>
-            <button onClick={handleLogout} className="btn-logout" title="Se déconnecter">
-              🚪 Déconnexion
-            </button>
-          </div>
+    <div className="dashboard-layout">
+      {/* SIDEBAR */}
+      <aside className="sidebar no-print">
+        <div className="sidebar-brand">
+          <div className="brand-logo">AP</div>
+          <span className="brand-name">Artisan<span>Pro</span></span>
         </div>
-      </header>
+        <nav className="sidebar-nav">
+          <button className={view === 'devis' ? 'active' : ''} onClick={() => setView('devis')}>📝 Éditeur de Devis</button>
+          <button className={view === 'historique' ? 'active' : ''} onClick={() => setView('historique')}>📊 Tableau de Bord</button>
+        </nav>
+        <div className="sidebar-footer">
+           <div className="user-badge">
+             <div className="avatar">{session.user.email[0].toUpperCase()}</div>
+             <p className="user-name">{session.user.email.split('@')[0]}</p>
+           </div>
+           <button onClick={() => supabase.auth.signOut()} className="btn-signout">Déconnexion</button>
+        </div>
+      </aside>
 
-      {/* CONTENU PRINCIPAL (PAGES) */}
-      <main className="content">
-        {view === 'create' ? (
-          <CreateDevis 
-            tools={{ 
-              ...devisTools, 
-              handleSaveFullDevis: onSave 
-            }} 
-          />
-        ) : (
-          <HistoryPage 
-            onSelect={handleSelectDevis} 
-            notify={notify} 
-          />
-        )}
+      {/* CONTENU PRINCIPAL */}
+      <main className="main-content">
+        <header className="content-header no-print">
+          <div className="header-title">
+            <h2>{view === 'devis' ? 'Nouveau Devis' : 'Mes Archives'}</h2>
+            <p>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          </div>
+          <div className="header-actions">
+            {/* Bouton Quitter visible uniquement sur mobile via le CSS */}
+            <button className="btn-logout-mobile" onClick={() => supabase.auth.signOut()}>
+              Quitter
+            </button>
+            
+            <button className="btn-secondary" onClick={() => window.print()}>🖨️ PDF</button>
+            <button className="btn-primary" onClick={() => alert("Enregistrement du devis en cours...")}>💾 Sauvegarder</button>
+          </div>
+        </header>
+
+        <div className="scroll-area">
+          {view === 'devis' ? (
+            /* --- PAPIER A4 --- */
+            <div className="paper-canvas shadow-xl">
+              <div className="devis-inner">
+                <div className="devis-header-top">
+                  <div className="devis-logo-zone">
+                     <div className="logo-placeholder-premium">VOTRE LOGO</div>
+                  </div>
+                  <div className="devis-meta-zone text-right">
+                    <h1 className="doc-type-title">DEVIS</h1>
+                    <p className="doc-meta-text">N° : {new Date().getFullYear()}-001</p>
+                  </div>
+                </div>
+
+                <div className="coords-wrapper">
+                   <SectionsCoordonnees 
+                      provider={provider} setProvider={setProvider} 
+                      client={client} setClient={setClient} 
+                      savedProviders={savedProviders} 
+                      savedClients={savedClients} 
+                    />
+                    <div className="no-print" style={{marginTop: '15px'}}>
+                      <button className="btn-save-mini" onClick={handleSaveEntreprise}>💾 Sauver mon profil entreprise</button>
+                    </div>
+                </div>
+
+                <table className="modern-table devis-table">
+                  <thead>
+                    <tr>
+                      <th>DÉSIGNATION</th>
+                      <th className="text-center">QTÉ</th>
+                      <th className="text-right">PRIX UNIT. HT</th>
+                      <th className="text-right">TOTAL HT</th>
+                      <th className="no-print"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr key={item.id}>
+                        <td><input className="input-clean" value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} placeholder="Taille de haie, Peinture..." /></td>
+                        <td className="text-center"><input type="number" className="input-clean text-center" value={item.quantite} onChange={(e) => updateItem(item.id, 'quantite', parseFloat(e.target.value) || 0)} /></td>
+                        <td className="text-right"><input type="number" className="input-clean text-right" value={item.prix} onChange={(e) => updateItem(item.id, 'prix', parseFloat(e.target.value) || 0)} /></td>
+                        <td className="text-right bold-text">{(item.quantite * item.prix).toFixed(2)} €</td>
+                        <td className="no-print text-center"><button onClick={() => removeItem(item.id)} className="btn-del">✕</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <button onClick={addItem} className="btn-add-line no-print">+ Ajouter un article</button>
+
+                <div className="devis-footer-grid">
+                  <div className="signature-zone">
+                    <p className="sig-title">Bon pour accord</p>
+                    <div className="sig-box"></div>
+                  </div>
+                  <div className="totals-zone">
+                    <div className="t-row"><span>Total HT</span> <span>{totalHT.toFixed(2)} €</span></div>
+                    <div className="t-row">
+                      <span>TVA ({tvaRate}%)</span>
+                      <select className="no-print mini-select" value={tvaRate} onChange={(e) => setTvaRate(parseInt(e.target.value))}>
+                        <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option>
+                      </select>
+                      <span>{totalTVA.toFixed(2)} €</span>
+                    </div>
+                    <div className="t-row ttc-row"><span>TOTAL TTC</span> <span>{totalTTC.toFixed(2)} €</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* --- HISTORIQUE --- */
+            <div className="dashboard-view">
+              <h2 className="section-title">Tableau de Bord</h2>
+              <div className="history-card-list shadow-sm">
+                <table className="history-table">
+                  <thead>
+                    <tr><th>Date</th><th>Client</th><th className="text-right">Montant TTC</th></tr>
+                  </thead>
+                  <tbody>
+                    {historiqueDevis.length > 0 ? historiqueDevis.map((d) => (
+                      <tr key={d.id}>
+                        <td>{new Date(d.created_at).toLocaleDateString()}</td>
+                        <td className="bold-text">{d.clients?.nom || 'Client Externe'}</td>
+                        <td className="text-right bold-text">{d.total_ttc?.toFixed(2)} €</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan="3" className="text-center" style={{padding: '3rem'}}>Aucun document dans vos archives.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
-      {/* PIED DE PAGE DISCRET */}
-      <footer className="no-print footer-app">
-        <p>© 2026 — Votre Gestionnaire de Devis Connecté</p>
-      </footer>
+      {/* IA BUBBLE */}
+      <div className="ia-floating-bubble no-print">
+        <ChatIA />
+      </div>
     </div>
   );
 }
