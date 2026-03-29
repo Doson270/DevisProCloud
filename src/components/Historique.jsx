@@ -25,7 +25,7 @@ export default function Historique({ session }) {
       
       setSelectedDevis(data);
 
-      // On laisse un court instant à React pour afficher le devis seul à l'écran
+      // Temps de rendu pour React avant le trigger d'impression
       setTimeout(() => {
         window.print();
       }, 800);
@@ -35,25 +35,21 @@ export default function Historique({ session }) {
     }
   };
 
-  if (loading) return <div>Chargement de l'historique...</div>;
+  if (loading) return <div className="section-card">Chargement de l'historique...</div>;
 
-  // --- VUE D'IMPRESSION (S'affiche uniquement quand un devis est sélectionné) ---
+  // --- VUE D'IMPRESSION ---
   if (selectedDevis) {
     return (
       <div className="print-mode-container">
-        {/* Bouton visible uniquement à l'écran pour revenir en arrière */}
-        <div className="no-print"
-        >
-          <button 
-            onClick={() => setSelectedDevis(null)}>
-            ⬅️ Quitter l'aperçu / Retour
+        <div className="no-print section-card" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button className="btn-secondary" onClick={() => setSelectedDevis(null)}>
+            ⬅️ Retour à l'historique
           </button>
-          <span>
-            (Si la fenêtre d'impression ne s'est pas ouverte, utilisez Ctrl + P)
-          </span>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>
+            Astuce : Si l'impression ne s'ouvre pas, faites <strong>Ctrl + P</strong>
+          </p>
         </div>
 
-        {/* ZONE D'IMPRESSION CIBLÉE PAR LE CSS */}
         <div id="print-area">
           <DocumentDevis devis={selectedDevis} />
         </div>
@@ -64,40 +60,53 @@ export default function Historique({ session }) {
   // --- VUE TABLEAU (Interface normale) ---
   return (
     <div className="historique-container">
-      <h2>📋 Historique des Devis</h2>
+      <h1>📋 Historique des Devis</h1>
       
       {devisList.length === 0 ? (
-        <div>
+        <div className="section-card">
           <p>Vous n'avez pas encore créé de devis.</p>
         </div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Entreprise</th>
-              <th>Client</th>
-              <th>Montant TTC</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {devisList.map((d) => (
-              <tr key={d.id}>
-                <td>{new Date(d.created_at).toLocaleDateString()}</td>
-                <td>{d.entreprises?.nom || 'N/A'}</td>
-                <td>{d.clients?.nom || 'N/A'}</td>
-                <td><strong>{d.total_ttc?.toFixed(2)} €</strong></td>
-                <td>
-                  <button 
-                    onClick={() => handlePreparePrint(d.id)}>
-                    🖨️ Imprimer / PDF
-                  </button>
-                </td>
+        <div className="section-card table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Société</th>
+                <th>Client</th>
+                <th>Montant TTC</th>
+                <th style={{ textAlign: 'center' }}>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {devisList.map((d) => (
+                <tr key={d.id}>
+                  <td data-label="Date">
+                    {new Date(d.created_at).toLocaleDateString()}
+                  </td>
+                  <td data-label="Société">
+                    {d.entreprises?.nom || 'N/A'}
+                  </td>
+                  <td data-label="Client">
+                    {d.clients?.nom || 'N/A'}
+                  </td>
+                  <td data-label="Montant">
+                    <strong>{d.total_ttc?.toFixed(2)} €</strong>
+                  </td>
+                  <td data-label="Action" style={{ textAlign: 'center' }}>
+                    <button 
+                      onClick={() => handlePreparePrint(d.id)}
+                      className="btn-save"
+                      style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                    >
+                      🖨️ Imprimer / PDF
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

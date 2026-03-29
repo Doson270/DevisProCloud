@@ -180,3 +180,114 @@ textarea { min-height: 80px; resize: vertical; }
   .main-content { padding: 0 !important; margin: 0 !important; }
   body { background: white !important; }
 }
+
+/* --- STYLES GLOBAUX POUR TOUS LES BOUTONS --- */
+
+/* Style par défaut pour n'importe quel bouton <button> */
+button:not(.ia-toggle-btn) {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+/* Boutons d'action standards (Bleu) */
+button:not(.nav-btn):not(.ia-toggle-btn):not(.btn-danger) {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+button:not(.nav-btn):not(.ia-toggle-btn):hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+/* Boutons de suppression / Danger (Rouge) */
+/* Si tu ajoutes className="btn-danger" à tes boutons supprimer */
+.btn-danger, button[style*="red"], button[style*="danger"] {
+  background: var(--danger) !important;
+  color: white !important;
+}
+
+/* --- BOUTONS DANS LES TABLEAUX (Historique / Clients) --- */
+td button {
+  padding: 6px 12px !important;
+  font-size: 0.8rem !important;
+  margin-right: 5px;
+}
+
+/* --- BOUTON DE L'ASSISTANT IA (Correction envoi) --- */
+.chat-input-area button {
+  background: var(--accent) !important;
+  color: white !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px;
+  border-radius: 50% !important;
+  padding: 0 !important;
+}
+
+.chat-input-area button:hover {
+  background: var(--primary) !important;
+}
+
+/* --- BOUTON DANS PARAMÈTRES / CONFIG --- */
+.config-container button, .section-card button {
+  margin-top: 10px;
+}
+/* --- RESPONSIVE HISTORIQUE & TABLEAUX --- */
+
+@media (max-width: 768px) {
+  /* On cache l'en-tête du tableau car il ne veut plus rien dire en mode carte */
+  .table-container table thead {
+    display: none;
+  }
+
+  /* Chaque ligne (tr) devient une carte blanche */
+  .table-container table tr {
+    display: block;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 15px;
+    padding: 10px;
+    box-shadow: var(--shadow);
+  }
+
+  /* Chaque cellule (td) devient une ligne de texte */
+  .table-container table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 10px 5px;
+    text-align: right;
+    font-size: 0.9rem;
+  }
+
+  .table-container table td:last-child {
+    border-bottom: none;
+    justify-content: center; /* Pour les boutons d'action */
+    gap: 10px;
+    padding-top: 15px;
+  }
+
+  /* Astuce pour afficher le nom de la colonne avant la valeur */
+  .table-container table td::before {
+    content: attr(data-label); /* Utilise l'attribut data-label du HTML */
+    font-weight: 700;
+    color: var(--text-light);
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+}
