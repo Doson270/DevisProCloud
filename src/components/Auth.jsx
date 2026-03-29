@@ -5,108 +5,116 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // Nouvel état
-  const [isLogin, setIsLogin] = useState(true);
+  const [confirmPassword, setConfirmPassword] = useState(''); // Nouveau champ
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-const handleAuth = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setLoading(true);
 
-  // --- NOUVELLE SÉCURITÉ : Vérification du mot de passe ---
-  if (!isLogin && password !== confirmPassword) {
-    alert("Les mots de passe ne correspondent pas !");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    if (isLogin) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      console.log("Connecté !", data);
-    } else {
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        // Optionnel : On peut ajouter le nom ici si on veut
-        options: {
-          data: {
-            display_name: email.split('@')[0], 
-          }
-        }
-      });
-      if (error) throw error;
-      
-      if (data.user) {
-        alert("Inscription réussie ! Vérifiez vos emails si la confirmation est activée.");
+    // --- SÉCURITÉ CÔTÉ CLIENT ---
+    if (isSignUp) {
+      if (password !== confirmPassword) {
+        setErrorMsg("Les mots de passe ne correspondent pas.");
+        setLoading(false);
+        return;
+      }
+      if (password.length < 6) {
+        setErrorMsg("Le mot de passe doit faire au moins 6 caractères.");
+        setLoading(false);
+        return;
       }
     }
-  } catch (error) {
-    console.error("Détails de l'erreur :", error);
-    alert(`Erreur : ${error.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
 
-  
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: { emailRedirectTo: window.location.origin }
+        });
+        if (error) throw error;
+        alert('Inscription réussie ! Vérifiez vos emails pour confirmer.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (error) {
+      setErrorMsg(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="auth-container">
+    <div className="auth-wrapper">
       <div className="auth-card">
-        <h1>🛠️ Devis Pro <span>Cloud</span></h1>
-        <p>{isLogin ? "Bon retour !" : "Créez votre compte gratuit"}</p>
-        
+        <div className="auth-header">
+          <h1>🛠️ ArtisanPro</h1>
+          <p>{isSignUp ? 'Créez votre compte pro' : 'Accédez à votre espace'}</p>
+        </div>
+
+        {errorMsg && (
+          <div className="auth-error-badge">
+            ⚠️ {errorMsg}
+          </div>
+        )}
+
         <form onSubmit={handleAuth} className="auth-form">
-          <input 
-            type="email" 
-            placeholder="Votre email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            required 
-          />
-          <input 
-            type="password" 
-            placeholder="Mot de passe" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
-          
-          {/* CHAMP DE CONFIRMATION (Affiché seulement si Inscription) */}
-          {!isLogin && (
+          <div className="input-group">
+            <label>Adresse Email</label>
+            <input 
+              type="email" 
+              placeholder="votre@email.com" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Mot de passe</label>
             <input 
               type="password" 
-              placeholder="Confirmez le mot de passe" 
-              value={confirmPassword} 
-              onChange={(e) => setConfirmPassword(e.target.value)} 
+              placeholder="••••••••" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
               required 
-              style={{ borderLeft: password === confirmPassword && password !== '' ? '4px solid var(--success)' : '4px solid var(--danger)' }}
             />
-            
-          )}
-            {!isLogin && (
-            <div className="password-requirements no-print">
-                <p style={{ color: password.length >= 8 ? 'var(--success)' : 'var(--text-muted)' }}>
-                {password.length >= 8 ? '✅' : '○'} 8 caractères minimum
-                </p>
-                <p style={{ color: /[0-9]/.test(password) ? 'var(--success)' : 'var(--text-muted)' }}>
-                {/[0-9]/.test(password) ? '✅' : '○'} Au moins un chiffre
-                </p>
-                <p style={{ color: /[!@#$%^&*]/.test(password) ? 'var(--success)' : 'var(--text-muted)' }}>
-                {/[!@#$%^&*]/.test(password) ? '✅' : '○'} Un caractère spécial (!@#$%^&*)
-                </p>
-            </div>
-            )}
+          </div>
 
-          <button type="submit" disabled={loading} className="btn-auth">
-            {loading ? "Traitement..." : (isLogin ? "Se connecter" : "S'inscrire")}
+          {/* CHAMP DE CONFIRMATION (Uniquement en mode Inscription) */}
+          {isSignUp && (
+            <div className="input-group animate-in">
+              <label>Confirmez le mot de passe</label>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                required 
+              />
+            </div>
+          )}
+
+          <button type="submit" className="btn-save auth-submit" disabled={loading}>
+            {loading ? 'Traitement en cours...' : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
           </button>
         </form>
 
-        <button className="btn-switch-auth" onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
-        </button>
+        <div className="auth-footer">
+          <button 
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMsg('');
+            }} 
+            className="btn-link"
+          >
+            {isSignUp ? 'Déjà inscrit ? Connectez-vous' : 'Nouveau ici ? Créez un compte'}
+          </button>
+        </div>
       </div>
     </div>
   );
