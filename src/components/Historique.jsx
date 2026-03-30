@@ -1,15 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { fetchHistoriqueDevis, fetchDevisDetails } from '../services/api';
+import { fetchHistoriqueDevis, fetchDevisDetails, deleteDevis, updateDevisStatus } from '../services/api'; // Assure-toi d'ajouter updateDevisStatus dans ton api.js
 import DocumentDevis from './DocumentDevis';
-import { deleteDevis } from '../services/api';
 
+// --- COMPOSANT BADGE INTERNE ---
+const StatusBadge = ({ statut }) => {
+  const styles = {
+    'Brouillon': { bg: '#eee', color: '#666' },
+    'Envoyé': { bg: '#e3f2fd', color: '#1976d2' },
+    'Accepté': { bg: '#e8f5e9', color: '#2e7d32' },
+    'Refusé': { bg: '#ffebee', color: '#c62828' }
+  };
+  const currentStyle = styles[statut] || styles['Brouillon'];
+  return (
+    <span style={{
+      padding: '4px 10px',
+      borderRadius: '12px',
+      fontSize: '0.75rem',
+      fontWeight: 'bold',
+      backgroundColor: currentStyle.bg,
+      color: currentStyle.color,
+      textTransform: 'uppercase',
+      display: 'inline-block'
+    }}>
+      {statut || 'Brouillon'}
+    </span>
+  );
+};
 
 export default function Historique({ session }) {
   const [devisList, setDevisList] = useState([]);
   const [selectedDevis, setSelectedDevis] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Charger la liste des devis au montage
   useEffect(() => {
     if (session?.user?.id) {
       fetchHistoriqueDevis(session.user.id)
@@ -19,12 +41,10 @@ export default function Historique({ session }) {
     }
   }, [session]);
 
-  // --- LOGIQUE DE SUPPRESSION ---
   const handleDelete = async (id) => {
-    if (window.confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce devis ? Cette action est irréversible.")) {
+    if (window.confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce devis ?")) {
       try {
         await deleteDevis(id);
-        // On met à jour l'affichage localement sans recharger
         setDevisList(prev => prev.filter(d => d.id !== id));
       } catch (err) {
         alert("Erreur lors de la suppression : " + err.message);
@@ -32,92 +52,93 @@ export default function Historique({ session }) {
     }
   };
 
-  // 2. Préparer et lancer l'impression
+  // --- NOUVELLE FONCTION : CHANGER LE STATUT ---
+  const handleStatusChange = async (id, nextStatus) => {
+    try {
+      await updateDevisStatus(id, nextStatus);
+      // Mise à jour locale de la liste
+      setDevisList(prev => prev.map(d => d.id === id ? { ...d, statut: nextStatus } : d));
+    } catch (err) {
+      alert("Erreur lors du changement de statut");
+    }
+  };
+
   const handlePreparePrint = async (id) => {
     try {
       const data = await fetchDevisDetails(id);
-      if (!data) return alert("Impossible de récupérer les détails du devis.");
-      
+      if (!data) return alert("Impossible de récupérer les détails.");
       setSelectedDevis(data);
-
-      // Temps de rendu pour React avant le trigger d'impression
-      setTimeout(() => {
-        window.print();
-      }, 800);
+      setTimeout(() => { window.print(); }, 800);
     } catch (err) {
-      console.error("Erreur lors de la préparation:", err);
       alert("Erreur technique lors de l'impression.");
     }
   };
 
   if (loading) return <div className="section-card">Chargement de l'historique...</div>;
 
-  // --- VUE D'IMPRESSION ---
   if (selectedDevis) {
     return (
       <div className="print-mode-container">
         <div className="no-print section-card" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button className="btn-secondary" onClick={() => setSelectedDevis(null)}>
-            ⬅️ Retour à l'historique
-          </button>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>
-            Astuce : Si l'impression ne s'ouvre pas, faites <strong>Ctrl + P</strong>
-          </p>
+          <button className="btn-secondary" onClick={() => setSelectedDevis(null)}>⬅️ Retour</button>
+          <p style={{ fontSize: '0.8rem', color: 'gray' }}>Impression : Ctrl + P</p>
         </div>
-
-        <div id="print-area">
-          <DocumentDevis devis={selectedDevis} />
-        </div>
+        <div id="print-area"><DocumentDevis devis={selectedDevis} /></div>
       </div>
     );
   }
 
-  // --- VUE TABLEAU (Interface normale) ---
   return (
     <div className="historique-container">
       <h1>📋 Historique des Devis</h1>
       
       {devisList.length === 0 ? (
-        <div className="section-card">
-          <p>Vous n'avez pas encore créé de devis.</p>
-        </div>
+        <div className="section-card"><p>Aucun devis créé.</p></div>
       ) : (
         <div className="section-card table-container">
-          <table>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Société</th>
                 <th>Client</th>
                 <th>Montant TTC</th>
-                <th style={{ textAlign: 'center' }}>Action</th>
+                <th style={{ textAlign: 'center' }}>Statut</th> {/* Nouvelle colonne */}
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {devisList.map((d) => (
-                <tr key={d.id}>
-                  <td data-label="Date">
-                    {new Date(d.created_at).toLocaleDateString()}
-                  </td>
-                  <td data-label="Société">
-                    {d.entreprises?.nom || 'N/A'}
-                  </td>
-                  <td data-label="Client">
-                    {d.clients?.nom || 'N/A'}
-                  </td>
-                  <td data-label="Montant">
-                    <strong>{d.total_ttc?.toFixed(2)} €</strong>
-                  </td>
-                  <td data-label="Action" style={{ textAlign: 'center' }}>
-                    <button 
-                      onClick={() => handlePreparePrint(d.id)}
-                      className="btn-save"
-                      style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                <tr key={d.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td>{new Date(d.created_at).toLocaleDateString()}</td>
+                  <td>{d.clients?.nom || 'N/A'}</td>
+                  <td><strong>{d.total_ttc?.toFixed(2)} €</strong></td>
+                  {/* COLONNE STATUT AVEC MENU DÉROULANT STYLISÉ */}
+                  <td style={{ textAlign: 'center' }}>
+                    <select 
+                      value={d.statut || 'Brouillon'} 
+                      onChange={(e) => handleStatusChange(d.id, e.target.value)}
+                      className="status-select"
+                      style={{ 
+                        borderLeft: `4px solid ${
+                          d.statut === 'Accepté' ? '#2e7d32' : 
+                          d.statut === 'Envoyé' ? '#1976d2' : 
+                          d.statut === 'Refusé' ? '#c62828' : '#666'
+                        }` 
+                      }}
                     >
-                      🖨️ Imprimer / PDF
+                      <option value="Brouillon">Brouillon</option>
+                      <option value="Envoyé">Envoyé</option>
+                      <option value="Accepté">Accepté</option>
+                      <option value="Refusé">Refusé</option>
+                    </select>
+                    <br />
+                    <StatusBadge statut={d.statut} />
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button onClick={() => handlePreparePrint(d.id)} className="btn-save" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                      🖨️ PDF
                     </button>
-                    {/* BOUTON SUPPRIMER */}
-                    <button onClick={() => handleDelete(d.id)} className="btn-danger" style={{ padding: '6px 12px' }}>
+                    <button onClick={() => handleDelete(d.id)} className="btn-danger" style={{ padding: '6px 12px', marginLeft: '5px' }}>
                       🗑️
                     </button>
                   </td>

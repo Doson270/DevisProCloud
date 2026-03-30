@@ -175,6 +175,7 @@ export const fetchHistoriqueDevis = async (userId) => {
   const { data, error } = await supabase
     .from('devis')
     .select(`
+        *,
       id,
       created_at,
       total_ht,
@@ -213,4 +214,14 @@ export const deleteDevis = async (id) => {
 
   if (error) throw error;
   return true;
+};
+
+export const updateDevisStatus = async (devisId, newStatus) => {
+  const { data, error } = await supabase
+    .from('devis')
+    .update({ statut: newStatus })
+    .eq('id', devisId);
+
+  if (error) throw error;
+  return data;
 };

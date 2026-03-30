@@ -440,3 +440,35 @@ input[type="file"] {
   font-size: 0.8rem;
   margin-top: 10px;
 }
+
+/* Style du conteneur de sélection */
+.status-select {
+  padding: 5px 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  font-size: 0.85rem;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  margin-bottom: 5px;
+  font-family: inherit;
+}
+
+.status-select:hover {
+  border-color: #3498db;
+  background-color: #fff;
+}
+
+.status-select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* On stylise les options à l'intérieur */
+.status-select option {
+  padding: 10px;
+  background: #fff;
+  color: #333;
+}
