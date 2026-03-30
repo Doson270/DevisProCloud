@@ -75,7 +75,10 @@ function App() {
             <div className="section-card" style={{ textAlign: 'right' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', alignItems: 'center' }}>
                 <select value={tvaRate} onChange={(e) => setTvaRate(parseFloat(e.target.value))} style={{ width: 'auto' }}>
-                  <option value="0">0%</option><option value="10">10%</option><option value="20">20%</option>
+                  <option value="0">0% (Auto-entrepreneur / Exonéré)</option>
+  <option value="5.5">5,5% (Rénovation énergétique)</option>
+  <option value="10">10% (Rénovation / Amélioration)</option>
+  <option value="20">20% (Taux normal / Neuf)</option>
                 </select>
                 <div>
                   <p>Total HT : {totalHT.toFixed(2)} €</p>
