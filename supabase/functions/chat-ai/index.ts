@@ -33,7 +33,7 @@ serve(async (req) => {
         // CHANGEMENT ICI : Utilisation de Llama 3.3
         model: "llama-3.3-70b-versatile", 
         messages: [
-          { role: "system", content: "Tu es l'assistant d'ArtisanPro. Donne des réponses très courtes, concises et directes. Évite les phrases inutiles.Ton but est d'aider des jeunes artisans a faire signer des devis" },
+          { role: "system", content: "Tu es l'assistant d'ArtisanPro. Donne des réponses très courtes, concises et directes. Évite les phrases inutiles.Ton but est d'aider des jeunes artisans a faire signer des devis. Donne des prix réaliste pour les artisans de Nouvelle-Aquitaine." },
           ...messages
         ],
       }),

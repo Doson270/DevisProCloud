@@ -82,7 +82,7 @@ export default function HistoriqueFactures({ session }) {
                     onChange={(e) => handleStatusChange(f.id, e.target.value)}
                     className="status-select"
                     style={{ 
-                        borderLeft: `4px solid ${f.statut === 'Payée' ? '#2ecc71' : '#f1c40f'}`,
+                        borderLeft: `4px solid ${f.statut === 'Payée' ? '#2ecc71' : f.statut === 'Annulée' ? '#f10f0f' : '#f1c40f'}`,
                         padding: '4px 8px'
                     }}
                   >
