@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { fetchHistoriqueDevis, fetchDevisDetails, deleteDevis, updateDevisStatus } from '../services/api'; // Assure-toi d'ajouter updateDevisStatus dans ton api.js
-import DocumentDevis from './DocumentDevis';
+import { 
+  fetchHistoriqueDevis, 
+  fetchDevisDetails, 
+  deleteDevis, 
+  updateDevisStatus,
+  convertDevisToFacture // Importe la nouvelle fonction API
+} from '../services/api'; 
+import DocumentDevis from './DocumentPDF';
 
 // --- COMPOSANT BADGE INTERNE ---
 const StatusBadge = ({ statut }) => {
@@ -34,12 +40,17 @@ export default function Historique({ session }) {
 
   useEffect(() => {
     if (session?.user?.id) {
-      fetchHistoriqueDevis(session.user.id)
-        .then(setDevisList)
-        .catch(err => console.error("Erreur historique:", err))
-        .finally(() => setLoading(false));
+      loadHistorique();
     }
   }, [session]);
+
+  const loadHistorique = () => {
+    setLoading(true);
+    fetchHistoriqueDevis(session.user.id)
+      .then(setDevisList)
+      .catch(err => console.error("Erreur historique:", err))
+      .finally(() => setLoading(false));
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce devis ?")) {
@@ -52,14 +63,28 @@ export default function Historique({ session }) {
     }
   };
 
-  // --- NOUVELLE FONCTION : CHANGER LE STATUT ---
   const handleStatusChange = async (id, nextStatus) => {
     try {
       await updateDevisStatus(id, nextStatus);
-      // Mise à jour locale de la liste
       setDevisList(prev => prev.map(d => d.id === id ? { ...d, statut: nextStatus } : d));
     } catch (err) {
       alert("Erreur lors du changement de statut");
+    }
+  };
+
+  // --- NOUVEAU : LOGIQUE DE TRANSFORMATION EN FACTURE ---
+  const handleConvertToFacture = async (devisId) => {
+    if (window.confirm("Voulez-vous transformer ce devis en facture ? Cela créera une facture officielle et marquera le devis comme 'Accepté'.")) {
+      try {
+        setLoading(true);
+        await convertDevisToFacture(devisId, session.user.id);
+        alert("✅ Facture générée avec succès ! Vous pouvez la retrouver dans l'onglet Factures.");
+        loadHistorique(); // Recharge la liste pour mettre à jour le statut du devis
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la création de la facture : " + err.message);
+        setLoading(false);
+      }
     }
   };
 
@@ -74,7 +99,7 @@ export default function Historique({ session }) {
     }
   };
 
-  if (loading) return <div className="section-card">Chargement de l'historique...</div>;
+  if (loading) return <div className="section-card">Traitement en cours...</div>;
 
   if (selectedDevis) {
     return (
@@ -102,7 +127,7 @@ export default function Historique({ session }) {
                 <th>Date</th>
                 <th>Client</th>
                 <th>Montant TTC</th>
-                <th style={{ textAlign: 'center' }}>Statut</th> {/* Nouvelle colonne */}
+                <th style={{ textAlign: 'center' }}>Statut</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
@@ -112,7 +137,6 @@ export default function Historique({ session }) {
                   <td>{new Date(d.created_at).toLocaleDateString()}</td>
                   <td>{d.clients?.nom || 'N/A'}</td>
                   <td><strong>{d.total_ttc?.toFixed(2)} €</strong></td>
-                  {/* COLONNE STATUT AVEC MENU DÉROULANT STYLISÉ */}
                   <td style={{ textAlign: 'center' }}>
                     <select 
                       value={d.statut || 'Brouillon'} 
@@ -135,10 +159,23 @@ export default function Historique({ session }) {
                     <StatusBadge statut={d.statut} />
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button onClick={() => handlePreparePrint(d.id)} className="btn-save" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
-                      🖨️ PDF
+                    <button onClick={() => handlePreparePrint(d.id)} className="btn-save" title="Imprimer PDF" style={{ padding: '6px 12px' }}>
+                      🖨️
                     </button>
-                    <button onClick={() => handleDelete(d.id)} className="btn-danger" style={{ padding: '6px 12px', marginLeft: '5px' }}>
+                    
+                    {/* BOUTON FACTURER : N'apparaît que si pas encore accepté */}
+                    {d.statut === 'Accepté' && (
+                      <button 
+                        onClick={() => handleConvertToFacture(d.id)} 
+                        className="btn-secondary" 
+                        title="Convertir en facture"
+                        style={{ padding: '6px 12px', marginLeft: '5px', backgroundColor: '#27ae60', color: 'white', border: 'none', borderRadius: '4px' }}
+                      >
+                        🧾 Facturer
+                      </button>
+                    )}
+
+                    <button onClick={() => handleDelete(d.id)} className="btn-danger" title="Supprimer" style={{ padding: '6px 12px', marginLeft: '5px' }}>
                       🗑️
                     </button>
                   </td>

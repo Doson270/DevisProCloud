@@ -225,3 +225,93 @@ export const updateDevisStatus = async (devisId, newStatus) => {
   if (error) throw error;
   return data;
 };
+
+// Factures
+
+export const fetchHistoriqueFactures = async (userId) => {
+  const { data, error } = await supabase
+    .from('factures')
+    .select(`
+      *,
+      clients (nom),
+      entreprises (nom)
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
+export const convertDevisToFacture = async (devisId, userId) => {
+  // 1. Récupérer les détails complets du devis (avec les items)
+  const { data: devis, error: fetchError } = await supabase
+    .from('devis')
+    .select('*, devis_items(*)')
+    .eq('id', devisId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Créer l'en-tête de la facture
+  const numeroFacture = `FAC-${Date.now().toString().slice(-6)}`;
+  const { data: facture, error: factError } = await supabase
+    .from('factures')
+    .insert([{
+      user_id: userId,
+      client_id: devis.client_id,
+      entreprise_id: devis.entreprise_id,
+      numero_facture: numeroFacture,
+      total_ht: devis.total_ht,
+      total_ttc: devis.total_ttc,
+      tva_taux: devis.tva_taux,
+      statut: 'Non payée',
+      date_echeance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // +30 jours
+    }])
+    .select()
+    .single();
+
+  if (factError) throw factError;
+
+  // 3. Copier les articles vers facture_items
+  const items = devis.devis_items.map(item => ({
+    facture_id: facture.id,
+    description: item.description || item.service,
+    qte: item.qte || item.quantite,
+    pu: item.pu || item.prix
+  }));
+
+  const { error: itemsError } = await supabase.from('facture_items').insert(items);
+  if (itemsError) throw itemsError;
+
+  // 4. Mettre à jour le statut du devis
+  await supabase.from('devis').update({ statut: 'Accepté' }).eq('id', devisId);
+
+  return facture;
+};
+
+// --- FONCTIONS POUR LES FACTURES ---
+export const updateFactureStatus = async (id, statut) => {
+  const { error } = await supabase
+    .from('factures')
+    .update({ statut: statut })
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+export const fetchFactureDetails = async (id) => {
+  const { data, error } = await supabase
+    .from('factures')
+    .select(`
+      *,
+      clients (*),
+      entreprises (*),
+      facture_items (*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
