@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchHistoriqueDevis, fetchDevisDetails } from '../services/api';
 import DocumentDevis from './DocumentDevis';
+import { deleteDevis } from '../services/api';
+
 
 export default function Historique({ session }) {
   const [devisList, setDevisList] = useState([]);
@@ -16,6 +18,19 @@ export default function Historique({ session }) {
         .finally(() => setLoading(false));
     }
   }, [session]);
+
+  // --- LOGIQUE DE SUPPRESSION ---
+  const handleDelete = async (id) => {
+    if (window.confirm("⚠️ Êtes-vous sûr de vouloir supprimer ce devis ? Cette action est irréversible.")) {
+      try {
+        await deleteDevis(id);
+        // On met à jour l'affichage localement sans recharger
+        setDevisList(prev => prev.filter(d => d.id !== id));
+      } catch (err) {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  };
 
   // 2. Préparer et lancer l'impression
   const handlePreparePrint = async (id) => {
@@ -100,6 +115,10 @@ export default function Historique({ session }) {
                       style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                     >
                       🖨️ Imprimer / PDF
+                    </button>
+                    {/* BOUTON SUPPRIMER */}
+                    <button onClick={() => handleDelete(d.id)} className="btn-danger" style={{ padding: '6px 12px' }}>
+                      🗑️
                     </button>
                   </td>
                 </tr>

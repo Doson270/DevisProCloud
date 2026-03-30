@@ -64,6 +64,8 @@ export const fetchEntreprises = async (userId) => {
   return data || [];
 };
 
+
+
 export const deleteEntreprise = async (id) => {
   const { error } = await supabase.from('entreprises').delete().eq('id', id);
   if (error) throw error;
@@ -167,4 +169,14 @@ export const fetchDevisDetails = async (devisId) => {
 
   if (error) throw error;
   return data;
+};
+
+export const deleteDevis = async (id) => {
+  const { error } = await supabase
+    .from('devis')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
 };
