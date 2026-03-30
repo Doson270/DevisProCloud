@@ -101,7 +101,7 @@ function App() {
             className="nav-btn logout-btn" 
             style={{ marginTop: 'auto', color: '#e74c3c', fontWeight: 'bold' }}
           >
-            🚪 Déconnexion
+            Déconnexion
           </button>
         </div>
       </nav>
