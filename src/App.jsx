@@ -8,14 +8,15 @@ import './index.css';
 import Configuration from './components/Configuration';
 import GestionClients from './components/GestionClients';
 import Historique from './components/Historique';
-import Factures from './components/HistoriqueFactures'; // Assure-toi que le nom du fichier est exact
+import Factures from './components/HistoriqueFactures'; 
 import { SectionsCoordonnees } from './components/SectionsCoordonnees';
 import ArticlesTable from './components/ArticlesTable';
 import ChatIA from './components/ChatIA';
+import Dashboard from './components/Dashboard';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [view, setView] = useState('devis');
+  const [view, setView] = useState('dashboard'); // Vue par défaut sur le Dashboard
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // ÉTATS DEVIS
@@ -40,7 +41,7 @@ function App() {
     try {
       await saveFullDevis({ session, provider, client, items, totalHT, totalTTC, tvaRate });
       alert("✅ Devis enregistré !");
-      setView('historique'); // Redirection automatique vers l'historique
+      setView('historique'); 
     } catch (err) { 
       alert("Erreur lors de l'enregistrement : " + err.message); 
     }
@@ -61,6 +62,15 @@ function App() {
           <h2>🛠️ ArtisanPro</h2>
         </div>
         <div className="nav-list">
+          
+          {/* --- BOUTON DASHBOARD --- */}
+          <button 
+            onClick={() => { setView('dashboard'); setIsMenuOpen(false); }} 
+            className={`nav-btn ${view === 'dashboard' ? 'active' : ''}`}
+          >
+            📊 Tableau de Bord
+          </button>
+
           <button 
             onClick={() => { setView('devis'); setIsMenuOpen(false); }} 
             className={`nav-btn ${view === 'devis' ? 'active' : ''}`}
@@ -109,6 +119,9 @@ function App() {
       {/* ZONE DE CONTENU PRINCIPAL */}
       <main className="main-content">
         
+        {/* --- VUE DASHBOARD --- */}
+        {view === 'dashboard' && <Dashboard session={session} setView={setView} />}
+
         {/* VUE : CRÉATION DE DEVIS */}
         {view === 'devis' && (
           <div className="devis-view">
@@ -129,7 +142,6 @@ function App() {
             <div className="section-card" style={{ marginTop: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
                 
-                {/* Sélecteur de TVA */}
                 <div style={{ flex: '1', minWidth: '200px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#666' }}>Taux de TVA applicable :</label>
                   <select 
@@ -138,14 +150,13 @@ function App() {
                     className="status-select" 
                     style={{ width: '100%', maxWidth: '300px' }}
                   >
-                    <option value="0">0% (Auto-entrepreneur / Franchise TVA)</option>
+                    <option value="0">0% (Auto-entrepreneur)</option>
                     <option value="5.5">5,5% (Rénovation énergétique)</option>
                     <option value="10">10% (Rénovation / Amélioration)</option>
                     <option value="20">20% (Taux normal)</option>
                   </select>
                 </div>
 
-                {/* Résumé des totaux */}
                 <div style={{ textAlign: 'right', minWidth: '200px' }}>
                   <p style={{ margin: '5px 0', color: '#666' }}>Total HT : <strong>{totalHT.toFixed(2)} €</strong></p>
                   <p style={{ margin: '5px 0', color: '#666' }}>Montant TVA : <strong>{(totalTTC - totalHT).toFixed(2)} €</strong></p>
@@ -164,16 +175,12 @@ function App() {
           </div>
         )}
 
-        {/* VUES ALTERNATIVES */}
+        {/* AUTRES VUES */}
         {view === 'historique' && <Historique session={session} />}
-        
         {view === 'factures' && <Factures session={session} />}
-        
         {view === 'clients' && <GestionClients session={session} />}
-        
         {view === 'config' && <Configuration session={session} />}
 
-        {/* L'IA reste accessible partout */}
         <ChatIA />
       </main>
     </div>

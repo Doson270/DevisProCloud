@@ -472,3 +472,8 @@ input[type="file"] {
   background: #fff;
   color: #333;
 }
+.nav-btn.active {
+  background-color: var(--accent); /* Ta couleur principale */
+  color: white;
+  border-left: 4px solid #fff;
+}

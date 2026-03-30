@@ -1,16 +1,35 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. Le Dashboard (Tableau de Bord)
+Actuellement, tu entres directement dans la création. Il manque une page d'accueil qui te donne une vision globale en un coup d'œil :
 
-Currently, two official plugins are available:
+Chiffre d'affaires : Total encaissé (factures payées) vs Total à venir (factures en attente).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Graphique mensuel : Une petite courbe pour voir l'évolution de ton activité.
 
-## React Compiler
+Alertes : "3 factures sont en retard de paiement" ou "2 devis n'ont pas encore de réponse".
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. La Gestion des Dépenses (Achats)
+Un artisan n'a pas que des recettes, il a des frais.
 
-## Expanding the ESLint configuration
+Module Achats : Pouvoir uploader une photo d'une facture fournisseur (matériaux, essence).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Calcul de la Marge : Savoir si sur un devis de 2000 €, tu gagnes vraiment de l'argent après avoir payé les matériaux.
+
+3. La Liaison Devis / Facture Multiple
+Parfois, pour un gros chantier, on ne fait pas qu'une facture à la fin :
+
+Factures d'acompte : Pouvoir générer une facture de 30% dès l'acceptation du devis.
+
+Factures de situation : Pour les chantiers qui durent 3 mois, facturer l'avancement des travaux.
+
+4. Automatisation et Rappels
+C'est souvent ce qui prend le plus de temps à un artisan :
+
+Relance automatique : Un bouton "Relancer le client" qui envoie un mail pré-rempli pour une facture impayée.
+
+Signature électronique : Intégrer un petit module pour que le client puisse signer le devis directement sur son téléphone/PC (très pro et engageant juridiquement).
+
+5. Export Comptable
+À la fin du trimestre ou de l'année, ton comptable va te demander des comptes.
+
+Un bouton "Exporter pour mon comptable" qui génère un fichier Excel ou CSV avec toutes les ventes et la TVA collectée de façon propre.
