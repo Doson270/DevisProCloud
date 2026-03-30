@@ -97,6 +97,40 @@ export const upsertEntreprise = async (entreprise, userId) => {
   }
   return data[0];
 };
+
+// Ajout de logos 
+export const uploadLogo = async (file, userId) => {
+  const fileName = `${userId}/${Date.now()}_${file.name}`;
+  
+  // 1. Envoyer le fichier dans le bucket 'logos'
+  const { data, error: storageError } = await supabase.storage
+    .from('logos')
+    .upload(fileName, file);
+
+  if (storageError) throw storageError;
+
+  // 2. Récupérer l'URL publique
+  const { data: publicUrlData } = supabase.storage
+    .from('logos')
+    .getPublicUrl(fileName);
+
+  const publicUrl = publicUrlData.publicUrl;
+
+  // 3. ENREGISTRER EN BDD (La partie manquante)
+  // On suppose que votre table s'appelle 'entreprises' 
+  // et qu'elle a une colonne 'user_id' pour identifier l'entreprise
+  const { error: dbError } = await supabase
+    .from('entreprises') // Remplacez par le nom exact de votre table
+    .update({ logo_url: publicUrl }) 
+    .eq('user_id', userId); // On cible la ligne de l'utilisateur actuel
+
+  if (dbError) {
+    console.error("Erreur lors de la mise à jour de la BDD:", dbError);
+    throw dbError;
+  }
+
+  return publicUrl;
+};
 // --- LOGIQUE CLIENTS ---
 // --- LOGIQUE CLIENTS FILTRÉS PAR ENTREPRISE ---
 
