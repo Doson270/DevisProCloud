@@ -4,9 +4,11 @@ import {
   fetchDevisDetails, 
   deleteDevis, 
   updateDevisStatus,
-  convertDevisToFacture // Importe la nouvelle fonction API
+  convertDevisToFacture,
+  saveSignature // Assure-toi de l'ajouter dans ton api.js
 } from '../services/api'; 
 import DocumentDevis from './DocumentPDF';
+import SignatureModal from './SignatureModal'; // Import du modal de signature
 
 // --- COMPOSANT BADGE INTERNE ---
 const StatusBadge = ({ statut }) => {
@@ -26,7 +28,8 @@ const StatusBadge = ({ statut }) => {
       backgroundColor: currentStyle.bg,
       color: currentStyle.color,
       textTransform: 'uppercase',
-      display: 'inline-block'
+      display: 'inline-block',
+      marginTop: '5px'
     }}>
       {statut || 'Brouillon'}
     </span>
@@ -37,6 +40,10 @@ export default function Historique({ session }) {
   const [devisList, setDevisList] = useState([]);
   const [selectedDevis, setSelectedDevis] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // États pour la signature
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentDevisId, setCurrentDevisId] = useState(null);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -50,6 +57,25 @@ export default function Historique({ session }) {
       .then(setDevisList)
       .catch(err => console.error("Erreur historique:", err))
       .finally(() => setLoading(false));
+  };
+
+  // --- LOGIQUE DE SIGNATURE ---
+  const handleOpenSignature = (id) => {
+    setCurrentDevisId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmSignature = async (imageData) => {
+    try {
+      setLoading(true);
+      await saveSignature(currentDevisId, imageData);
+      alert("🖋️ Devis signé et accepté !");
+      setIsModalOpen(false);
+      loadHistorique(); 
+    } catch (err) {
+      alert("Erreur lors de la signature : " + err.message);
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -72,17 +98,15 @@ export default function Historique({ session }) {
     }
   };
 
-  // --- NOUVEAU : LOGIQUE DE TRANSFORMATION EN FACTURE ---
   const handleConvertToFacture = async (devisId) => {
-    if (window.confirm("Voulez-vous transformer ce devis en facture ? Cela créera une facture officielle et marquera le devis comme 'Accepté'.")) {
+    if (window.confirm("Voulez-vous transformer ce devis en facture ?")) {
       try {
         setLoading(true);
         await convertDevisToFacture(devisId, session.user.id);
-        alert("✅ Facture générée avec succès ! Vous pouvez la retrouver dans l'onglet Factures.");
-        loadHistorique(); // Recharge la liste pour mettre à jour le statut du devis
+        alert("✅ Facture générée avec succès !");
+        loadHistorique();
       } catch (err) {
-        console.error(err);
-        alert("Erreur lors de la création de la facture : " + err.message);
+        alert("Erreur : " + err.message);
         setLoading(false);
       }
     }
@@ -124,7 +148,7 @@ export default function Historique({ session }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th>Date</th>
+                <th style={{ padding: '12px' }}>Date</th>
                 <th>Client</th>
                 <th>Montant TTC</th>
                 <th style={{ textAlign: 'center' }}>Statut</th>
@@ -134,7 +158,7 @@ export default function Historique({ session }) {
             <tbody>
               {devisList.map((d) => (
                 <tr key={d.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td>{new Date(d.created_at).toLocaleDateString()}</td>
+                  <td style={{ padding: '12px' }}>{new Date(d.created_at).toLocaleDateString()}</td>
                   <td>{d.clients?.nom || 'N/A'}</td>
                   <td><strong>{d.total_ttc?.toFixed(2)} €</strong></td>
                   <td style={{ textAlign: 'center' }}>
@@ -159,31 +183,53 @@ export default function Historique({ session }) {
                     <StatusBadge statut={d.statut} />
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button onClick={() => handlePreparePrint(d.id)} className="btn-save" title="Imprimer PDF" style={{ padding: '6px 12px' }}>
-                      🖨️
-                    </button>
-                    
-                    {/* BOUTON FACTURER : N'apparaît que si pas encore accepté */}
-                    {d.statut === 'Accepté' && (
-                      <button 
-                        onClick={() => handleConvertToFacture(d.id)} 
-                        className="btn-secondary" 
-                        title="Convertir en facture"
-                        style={{ padding: '6px 12px', marginLeft: '5px', backgroundColor: '#27ae60', color: 'white', border: 'none', borderRadius: '4px' }}
-                      >
-                        🧾 Facturer
+                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                      <button onClick={() => handlePreparePrint(d.id)} className="btn-save" title="Imprimer PDF">
+                        🖨️
                       </button>
-                    )}
 
-                    <button onClick={() => handleDelete(d.id)} className="btn-danger" title="Supprimer" style={{ padding: '6px 12px', marginLeft: '5px' }}>
-                      🗑️
-                    </button>
+                      {/* NOUVEAU : BOUTON SIGNER (si pas encore accepté/signé) */}
+                      {!d.signature_url && d.statut !== 'Accepté' && (
+                        <button 
+                          onClick={() => handleOpenSignature(d.id)} 
+                          className="btn-save" 
+                          style={{ backgroundColor: '#f39c12' }}
+                          title="Signer électroniquement"
+                        >
+                          ✍️
+                        </button>
+                      )}
+                      
+                      {/* BOUTON FACTURER (si accepté) */}
+                      {d.statut === 'Accepté' && (
+                        <button 
+                          onClick={() => handleConvertToFacture(d.id)} 
+                          className="btn-secondary" 
+                          style={{ backgroundColor: '#27ae60', color: 'white' }}
+                          title="Convertir en facture"
+                        >
+                          🧾
+                        </button>
+                      )}
+
+                      <button onClick={() => handleDelete(d.id)} className="btn-danger" title="Supprimer">
+                        🗑️
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* MODAL DE SIGNATURE */}
+      {isModalOpen && (
+        <SignatureModal 
+          onClose={() => setIsModalOpen(false)} 
+          onSave={handleConfirmSignature} 
+        />
       )}
     </div>
   );

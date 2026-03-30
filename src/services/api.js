@@ -315,3 +315,19 @@ export const fetchFactureDetails = async (id) => {
   if (error) throw error;
   return data;
 };
+
+// Signature des devis 
+
+export const saveSignature = async (devisId, signatureData) => {
+  const { data, error } = await supabase
+    .from('devis')
+    .update({ 
+      signature_url: signatureData,
+      statut: 'Accepté' 
+      // ON SUPPRIME LA LIGNE updated_at ICI
+    })
+    .eq('id', devisId);
+
+  if (error) throw error;
+  return data;
+};
